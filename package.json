@@ -1,7 +1,7 @@
 {
-  "name": "savant-ws-middleware",
+  "name": "ws-middleware",
   "version": "1.0.0",
-  "description": "",
+  "description": "Add remote WebSocket support to any pre-existing class or function while retaining existing syntax",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
