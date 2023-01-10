@@ -1,0 +1,20 @@
+{
+  "name": "savant-ws-middleware",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/B3N909/savant-ws-middleware.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/B3N909/savant-ws-middleware/issues"
+  },
+  "homepage": "https://github.com/B3N909/savant-ws-middleware#readme"
+}
