@@ -1,6 +1,6 @@
 {
-  "name": "ws-middleware",
-  "version": "1.0.0",
+  "name": "@savant/ws-middleware",
+  "version": "1.0.3",
   "description": "Add remote WebSocket support to any pre-existing class or function while retaining existing syntax",
   "main": "index.js",
   "scripts": {
@@ -11,7 +11,7 @@
     "url": "git+https://github.com/B3N909/savant-ws-middleware.git"
   },
   "keywords": [],
-  "author": "",
+  "author": "Savant#0001",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/B3N909/savant-ws-middleware/issues"

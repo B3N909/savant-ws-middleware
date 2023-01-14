@@ -11,6 +11,7 @@ class WebSocketClient {
         this.ws = new WebSocket(wsUrl);
 
         this.ws.on("open", () => {
+            console.log("(Client) Connected to WebSocket");
             this.isOpen = true;
 
             this.handle({
@@ -19,6 +20,7 @@ class WebSocketClient {
             });
         });
         this.ws.on("close", () => {
+            console.log("(Client) Disconnected from WebSocket");
             this.isOpen = false;
 
             this.handle({
@@ -27,6 +29,7 @@ class WebSocketClient {
             })
         });
         this.ws.on("message", (message) => {
+            console.log("(Client) Received message", message);
             try {
                 const object = JSON.parse(message);
                 console.log("(Client) Received message", object);
@@ -59,6 +62,7 @@ class WebSocketClient {
         object._id = id;
 
         
+        console.log(`(Client) Sending message`, object, `to`, `${this.wsUrl}`)
         this.ws.send(JSON.stringify(object));
         
         return await new Promise(r => this.events.once(id, r))
@@ -129,10 +133,12 @@ const GetClassMethods = (root) => {
         current = Object.getPrototypeOf(current);
     }
 
-    return {
-        methods,
-        staticMethods
-    }
+    // return {
+    //     methods,
+    //     staticMethods
+    // }
+
+    return methods;
 }
 
 class HostMiddleware {
@@ -148,6 +154,7 @@ class HostMiddleware {
         console.log(`(Server) Listening on port ${port}`);
         this.ws.on("connection", (socket) => {
             // console.log("+1 new connection to host");
+            console.log(`(Server) New connection from ${socket._socket.remoteAddress}`);
             
             socket.on("message", async (message) => {
                 message = message.toString();
@@ -200,13 +207,22 @@ class HostMiddleware {
 }
 
 const ClientMiddleware = (root, wsUrl) => {
-    return class MiddlewareClass extends WebSocketClient {
+    // if root is of type object
+    
+    let methods = [];
+    if(typeof root === "object") {
+        const keys = Object.keys(root);
+        for (const key of keys) {
+            methods.push(key);
+        }
+    } else methods = GetClassMethods(root);
+    
+    class MiddlewareClass extends WebSocketClient {
         constructor(...args) {
             super(wsUrl, args)
             // wrap all of root's methods
             
-            const methods = GetClassMethods(root);
-            for (const key of methods.methods) {
+            for (const key of methods) {
                 this[key] = async (...args) => {
                     return await this.handle({
                         name: key,
@@ -214,17 +230,31 @@ const ClientMiddleware = (root, wsUrl) => {
                     });
                 };
             }
-            for (const key of methods.staticMethods) {
-                this[key] = async (...args) => {
-                    return await this.handle({
-                        name: key,
-                        args,
-                        static: true
-                    });
-                };
-            }
         }
     }
+
+    // for (const key of methods.staticMethods) {
+    //     console.log("setting static method", key);
+    //     // set static method KEY to a function that calls the static method KEY on the root class
+    //     MiddlewareClass[key] = async (...args) => {
+    //         // await (new MiddlewareClass()).handle({
+    //         //     name: key,
+    //         //     args,
+    //         //     static: true
+    //         // });
+
+    //         const tempClient = new WebSocketClient(wsUrl);
+    //         await tempClient.connect();
+    //         const result = await tempClient.handle({
+    //             name: key,
+    //             args,
+    //             static: true
+    //         });
+            
+    //     };
+    // }
+
+    return MiddlewareClass;
 }
 
 module.exports = {

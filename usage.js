@@ -4,17 +4,9 @@ class Animal {
         this.name = name;
     }
 
-    getName (name) {
-        return name;
-    }
-
-    setAge (age) {
-        console.log("(...Animal) age set: " + age);
-        this.age = age;
-    }
-
-    async wait10Seconds () {
-        return new Promise(r => setTimeout(() => {r("waited 10 seconds!")}, 10000));
+    static create (name) {
+        console.log("(...Animal) creating", name);
+        return new Animal(name);
     }
 }
 
@@ -32,7 +24,6 @@ class Animal {
     const Client = require("./index.js").Client;
     const RemoteAnimal = Client(Animal, "ws://127.0.0.1:3000");
 
-    const remoteAnimal = new RemoteAnimal("dog");
-    const result = await remoteAnimal.wait10Seconds(10);
-    console.log("Result:", result);
+    const animal = await RemoteAnimal.create("dog");
+    console.log(animal.name)
 })();
