@@ -161,7 +161,7 @@ class HostMiddleware {
                 return;
             }
             this.connections++;
-            
+
             // console.log("+1 new connection to host");
             console.log(`(Server) New connection from ${socket._socket.remoteAddress}`);
             
@@ -175,6 +175,11 @@ class HostMiddleware {
                 } catch (err) {
                     console.error(err);
                 }
+            });
+
+            socket.on("close", () => {
+                this.connections--;
+                console.log(`(Server) Connection from ${socket._socket.remoteAddress} closed`);
             });
         });
     }
