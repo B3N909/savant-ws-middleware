@@ -147,12 +147,21 @@ class HostMiddleware {
         this.root = root;
     }
 
-    listen (port) {
+    listen (port, maxConnections = 1) {
         this.port = port;
+        this.maxConnections = maxConnections;
+        this.connections = 0;
 
         this.ws = new WebSocket.Server({ port });
         console.log(`(Server) Listening on port ${port}`);
         this.ws.on("connection", (socket) => {
+            if(this.connections >= this.maxConnections) {
+                console.log(`(Server) Max connections reached, closing connection from ${socket._socket.remoteAddress}`);
+                socket.close();
+                return;
+            }
+            this.connections++;
+            
             // console.log("+1 new connection to host");
             console.log(`(Server) New connection from ${socket._socket.remoteAddress}`);
             
