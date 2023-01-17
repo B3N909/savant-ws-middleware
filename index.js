@@ -141,50 +141,20 @@ const GetClassMethods = (root) => {
     return methods;
 }
 
-class HostMiddleware {
-
-    constructor (root) {
-        this.root = root;
+const HostMiddleware = (root, options) => {
+    // if options is number
+    if(typeof options === "number") {
+        options = {
+            port: options
+        }
     }
 
-    listen (port, maxConnections = 1) {
-        this.port = port;
-        this.maxConnections = maxConnections;
-        this.connections = 0;
+    if(!options) options = {};
+    if(!options.port) options.port = process.env.PORT || 3000;
+    if(!options.maxConnections) options.maxConnections = 1;
+    
 
-        this.ws = new WebSocket.Server({ port });
-        console.log(`(Server) Listening on port ${port}`);
-        this.ws.on("connection", (socket) => {
-            if(this.connections >= this.maxConnections) {
-                console.log(`(Server) Max connections reached, closing connection from ${socket._socket.remoteAddress}`);
-                socket.close();
-                return;
-            }
-            this.connections++;
-
-            // console.log("+1 new connection to host");
-            console.log(`(Server) New connection from ${socket._socket.remoteAddress}`);
-            
-            socket.on("message", async (message) => {
-                message = message.toString();
-                console.log("(Server) Received", message);
-
-                try {
-                    const object = JSON.parse(message);
-                    await this._handle(socket, object);
-                } catch (err) {
-                    console.error(err);
-                }
-            });
-
-            socket.on("close", () => {
-                this.connections--;
-                console.log(`(Server) Connection from ${socket._socket.remoteAddress} closed`);
-            });
-        });
-    }
-
-    async _handle (socket, object) {
+    const _handle = async (socket, object) => {
         const name = object.name;
         const args = object.args;
         const _id = object._id;
@@ -217,6 +187,51 @@ class HostMiddleware {
                 result
             }));
         }
+    }
+
+
+    let connections = 0;
+
+    const ws = new WebSocket.Server({ port: options.port });
+    console.log(`(Server) Listening on port ${port}`);
+    ws.on("connection", (socket) => {
+        if(connections > options.maxConnections) {
+            console.log(`(Server) Max connections reached, closing connection from ${socket._socket.remoteAddress}`);
+            socket.close();
+            return;
+        }
+
+        // Handle New Connection
+        connections++;
+        console.log(`(Server) New connection from ${socket._socket.remoteAddress}`);
+
+        // Handle Messages
+        socket.on("message", async (message) => {
+            message = message.toString();
+            console.log("(Server) Received", message);
+
+            try {
+                const object = JSON.parse(message);
+                await _handle(socket, object);
+            } catch (err) {
+                console.error(err);
+            }
+        });
+
+        socket.on("close", () => {
+            this.connections--;
+            console.log(`(Server) Connection from ${socket._socket.remoteAddress} closed`);
+        });
+    });
+
+    return {
+        close: async () => {
+            await new Promise(r => ws.close(r));
+            console.log("(Server) Closed");
+        },
+        connections: () => connections,
+        port: () => options.port,
+        maxConnections: () => options.maxConnections,
     }
 }
 
