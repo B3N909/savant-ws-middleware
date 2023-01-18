@@ -1,45 +1,74 @@
 const WebSocket = require("ws");
+const request = require("request");
 
 class WebSocketClient {
-    constructor(wsUrl, args) {
-        this.wsUrl = wsUrl;
-        
-        this.isOpen = false;
 
-        const EventEmitter = require("events");
-        this.events = new EventEmitter();
-        this.ws = new WebSocket(wsUrl);
+    async _getWsUrl (url) {
+        if(url.startsWith("ws://") || url.startsWith("wss://")) return url;
 
-        this.ws.on("open", () => {
-            console.log("(Client) Connected to WebSocket");
-            this.isOpen = true;
-
-            this.handle({
-                name: "constructor",
-                args
-            });
-        });
-        this.ws.on("close", () => {
-            console.log("(Client) Disconnected from WebSocket");
-            this.isOpen = false;
-
-            this.handle({
-                name: "close",
-                args: []
-            })
-        });
-        this.ws.on("message", (message) => {
-            console.log("(Client) Received message", message);
+        let v = await new Promise(r => {
             try {
-                const object = JSON.parse(message);
-                console.log("(Client) Received message", object);
+                request({
+                    url,
+                    method: "GET",
+                    json: true
+                }, (err, resp, body) => {
+                    if(err || !resp || !resp.statusCode || !resp.statusCode !== 200) {
+                        if(err) throw err;
+                        else throw new Error("Invalid response from server, cannot connect to redirect URL");
+                    }
+                    if(!body.externalIP) throw new Error("Invalid response from server, cannot connect to redirect URL, no redirect IP");
+                    console.log("Redirecting to", body.externalIP)
+                    return r(body.externalIP);
+                });
+            } catch (err) { r(false); }
+        });
+        if(!v) return await this._getWsUrl(url);
+        return `ws://${v}`;
+    }
 
-                if(object._id) {
-                    this.events.emit(object._id, object);
+    constructor(url, args) {
+        this.isOpen = false;
+        
+
+        this._getWsUrl(url).then(wsUrl => {
+            this.wsUrl = wsUrl;
+            
+            const EventEmitter = require("events");
+            this.events = new EventEmitter();
+            this.ws = new WebSocket(wsUrl);
+
+            this.ws.on("open", () => {
+                console.log("(Client) Connected to WebSocket");
+                this.isOpen = true;
+
+                this.handle({
+                    name: "constructor",
+                    args
+                });
+            });
+            this.ws.on("close", () => {
+                console.log("(Client) Disconnected from WebSocket");
+                this.isOpen = false;
+
+                this.handle({
+                    name: "close",
+                    args: []
+                })
+            });
+            this.ws.on("message", (message) => {
+                console.log("(Client) Received message", message);
+                try {
+                    const object = JSON.parse(message);
+                    console.log("(Client) Received message", object);
+
+                    if(object._id) {
+                        this.events.emit(object._id, object);
+                    }
+                } catch(err) {
+                    console.error(err);
                 }
-            } catch(err) {
-                console.error(err);
-            }
+            });
         });
     }
 
@@ -261,28 +290,6 @@ const ClientMiddleware = (root, wsUrl) => {
             }
         }
     }
-
-    // for (const key of methods.staticMethods) {
-    //     console.log("setting static method", key);
-    //     // set static method KEY to a function that calls the static method KEY on the root class
-    //     MiddlewareClass[key] = async (...args) => {
-    //         // await (new MiddlewareClass()).handle({
-    //         //     name: key,
-    //         //     args,
-    //         //     static: true
-    //         // });
-
-    //         const tempClient = new WebSocketClient(wsUrl);
-    //         await tempClient.connect();
-    //         const result = await tempClient.handle({
-    //             name: key,
-    //             args,
-    //             static: true
-    //         });
-            
-    //     };
-    // }
-
     return MiddlewareClass;
 }
 
