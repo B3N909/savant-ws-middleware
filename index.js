@@ -193,7 +193,7 @@ const HostMiddleware = (root, options) => {
     let connections = 0;
 
     const ws = new WebSocket.Server({ port: options.port });
-    console.log(`(Server) Listening on port ${port}`);
+    console.log(`(Server) Listening on port ${options.port}`);
     ws.on("connection", (socket) => {
         if(connections > options.maxConnections) {
             console.log(`(Server) Max connections reached, closing connection from ${socket._socket.remoteAddress}`);
