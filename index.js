@@ -153,7 +153,7 @@ const HostMiddleware = (root, options) => {
     if(!options.maxConnections) options.maxConnections = 1;
     
     let instance;
-    let disconnectCallback;
+    let disconnectCallback, connectCallback;
 
     const _handle = async (socket, object) => {
         const name = object.name;
@@ -206,6 +206,11 @@ const HostMiddleware = (root, options) => {
         connections++;
         console.log(`(Server) New connection from ${socket._socket.remoteAddress}`);
 
+        connectCallback({
+            connections: connections,
+            maxConnections: options.maxConnections,
+        });
+
         // Handle Messages
         socket.on("message", async (message) => {
             message = message.toString();
@@ -219,9 +224,12 @@ const HostMiddleware = (root, options) => {
             }
         });
 
-        socket.on("close", () => {
-            if(disconnectCallback) disconnectCallback();
+        socket.on("close", (e) => {
             connections--;
+            if(disconnectCallback) disconnectCallback({
+                connections: connections,
+                maxConnections: options.maxConnections,
+            });
             console.log(`(Server) Connection from ${socket._socket.remoteAddress} closed`);
         });
     });
@@ -236,7 +244,11 @@ const HostMiddleware = (root, options) => {
         maxConnections: () => options.maxConnections,
         onDisconnect: (callback) => {
             disconnectCallback = callback;
-        }
+        },
+        onConnect: (callback) => {
+            connectCallback = callback;
+        },
+        isServer: true,
     }
 }
 
