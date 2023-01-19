@@ -98,36 +98,6 @@ class WebSocketClient {
     }
 }
 
-// class ClientMiddleware {
-
-//     constructor (wrap, url) {
-//         this.client = new WebSocket(url);
-
-//         // wrap all of wrap's methods
-//         for (const key in wrap) {
-//             if (typeof wrap[key] === "function") {
-//                 this[key] = (...args) => {
-//                     this.handle(key, ...args);
-//                 };
-//             }
-//         }
-
-
-//     }
-
-//     handle (name, ...args) {
-//         console.log("handle", name, arguments);
-
-//         let object = {
-//             name,
-//             args
-//         }
-        
-//         // send this over the WebSocket connection
-//         this.client.handle(object);
-//     }
-// }
-
 // This function should return an array of all the methods in a class prototype, including inherited methods.
 // For example: GetClassMethods(Dog) should return ["bark", "idle", "newDog"] (in any order)
 // Make sure we grab any static methods as well.
@@ -182,6 +152,8 @@ const HostMiddleware = (root, options) => {
     if(!options.port) options.port = process.env.PORT || 3000;
     if(!options.maxConnections) options.maxConnections = 1;
     
+    let instance;
+    let disconnectCallback;
 
     const _handle = async (socket, object) => {
         const name = object.name;
@@ -189,7 +161,7 @@ const HostMiddleware = (root, options) => {
         const _id = object._id;
 
         if(name === "constructor") {
-            this.instance = new this.root(...args);
+            instance = new root(...args);
             console.log("(Server) Created new root instance");
 
             socket.send(JSON.stringify({
@@ -197,7 +169,7 @@ const HostMiddleware = (root, options) => {
                 result: true
             }));
         } else if(name === "close") {
-            delete this.instance;
+            delete instance;
             console.log("(Server) Destroyed root instance");
 
             socket.send(JSON.stringify({
@@ -205,11 +177,11 @@ const HostMiddleware = (root, options) => {
                 result: true
             }));
         } else {
-            if(!this.instance) throw new Error("No root instance exists!");
-            if(typeof this.instance[name] !== "function") throw new Error("Root method does not exist!");
+            if(!instance) throw new Error("No root instance exists!");
+            if(typeof instance[name] !== "function") throw new Error("Root method does not exist!");
 
             console.log("(Server) Calling root method", name, args);
-            const result = await this.instance[name](...args);
+            const result = await instance[name](...args);
 
             socket.send(JSON.stringify({
                 _id,
@@ -248,7 +220,8 @@ const HostMiddleware = (root, options) => {
         });
 
         socket.on("close", () => {
-            this.connections--;
+            if(disconnectCallback) disconnectCallback();
+            connections--;
             console.log(`(Server) Connection from ${socket._socket.remoteAddress} closed`);
         });
     });
@@ -261,6 +234,9 @@ const HostMiddleware = (root, options) => {
         connections: () => connections,
         port: () => options.port,
         maxConnections: () => options.maxConnections,
+        onDisconnect: (callback) => {
+            disconnectCallback = callback;
+        }
     }
 }
 
