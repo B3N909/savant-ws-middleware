@@ -14,6 +14,8 @@ class WebSocketClient {
                     json: true
                 }, (err, resp, body) => {
                     if(err || !resp || !resp.statusCode || !resp.statusCode !== 200) {
+                        if(body && body.includes("Max instances reached")) throw new Error("Max cloud instances reached, cannot connect to redirect URL")
+                        
                         if(err) throw err;
                         else throw new Error("Invalid response from server, cannot connect to redirect URL");
                     }
