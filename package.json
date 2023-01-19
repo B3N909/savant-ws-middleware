@@ -1,6 +1,6 @@
 {
   "name": "@savant/ws-middleware",
-  "version": "1.0.12",
+  "version": "1.0.13",
   "description": "Add remote WebSocket support to any pre-existing class or function while retaining existing syntax",
   "main": "index.js",
   "scripts": {
@@ -18,6 +18,7 @@
   },
   "homepage": "https://github.com/B3N909/ws-middleware#readme",
   "dependencies": {
+    "request": "^2.88.2",
     "ws": "^8.12.0"
   }
 }
