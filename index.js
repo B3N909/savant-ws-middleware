@@ -63,7 +63,6 @@ class WebSocketClient {
                 })
             });
             this.ws.on("message", (message) => {
-                console.log("(Client) Received message", message);
                 try {
                     const object = JSON.parse(message);
                     console.log("(Client) Received message", object);
