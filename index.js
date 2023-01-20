@@ -19,7 +19,9 @@ class WebSocketClient {
                         if(err) throw err;
                         else throw new Error("Invalid response from server, cannot connect to redirect URL");
                     }
-                    if(!body.externalIP) throw new Error("Invalid response from server, cannot connect to redirect URL, no redirect IP");
+                    // if there is no body.externalIP
+                    if(typeof body.externalIP === "undefined") throw new Error("Invalid response from server, cannot connect to redirect URL, no redirect IP");
+                    if(!body.externalIP) r(false);
                     
                     let externalIP = body.externalIP;
                     if(!externalIP.includes(":")) externalIP += ":3000";
