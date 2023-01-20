@@ -20,8 +20,12 @@ class WebSocketClient {
                         else throw new Error("Invalid response from server, cannot connect to redirect URL");
                     }
                     if(!body.externalIP) throw new Error("Invalid response from server, cannot connect to redirect URL, no redirect IP");
-                    console.log("Redirecting to", body.externalIP)
-                    return r(body.externalIP);
+                    
+                    let externalIP = body.externalIP;
+                    if(!externalIP.includes(":")) externalIP += ":8080";
+
+                    console.log("Redirecting to", externalIP)
+                    return r(externalIP);
                 });
             } catch (err) { r(false); }
         });
