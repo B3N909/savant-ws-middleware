@@ -22,7 +22,7 @@ class WebSocketClient {
                     if(!body.externalIP) throw new Error("Invalid response from server, cannot connect to redirect URL, no redirect IP");
                     
                     let externalIP = body.externalIP;
-                    if(!externalIP.includes(":")) externalIP += ":8080";
+                    if(!externalIP.includes(":")) externalIP += ":3000";
 
                     console.log("Redirecting to", externalIP)
                     return r(externalIP);
