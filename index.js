@@ -213,7 +213,7 @@ const HostMiddleware = (root, options) => {
         connections++;
         console.log(`(Server) New connection from ${socket._socket.remoteAddress}`);
 
-        connectCallback({
+        if(connectCallback) connectCallback({
             connections: connections,
             maxConnections: options.maxConnections,
         });
