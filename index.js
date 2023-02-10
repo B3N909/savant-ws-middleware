@@ -194,12 +194,12 @@ const HostMiddleware = (root, options) => {
             // for (const key in result) {
             //     if(key.startsWith("_")) delete result[key];
             // }
-
+            
             const str = JSON.stringify({
                 _id,
                 result
             }, (key, value) => {
-                if (key.startsWith("_")) {
+                if (key.startsWith("_") && key !== "_id") {
                   return undefined;
                 }
                 return value;
