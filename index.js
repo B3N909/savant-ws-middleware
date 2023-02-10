@@ -191,14 +191,19 @@ const HostMiddleware = (root, options) => {
             let result = await instance[name](...args);
 
             // remove any private fields
-            for (const key in result) {
-                if(key.startsWith("_")) delete result[key];
-            }
+            // for (const key in result) {
+            //     if(key.startsWith("_")) delete result[key];
+            // }
 
             socket.send(JSON.stringify({
                 _id,
                 result
-            }));
+            }, (key, value) => {
+                if (key.startsWith("_")) {
+                  return undefined;
+                }
+                return value;
+              }));
         }
     }
 
