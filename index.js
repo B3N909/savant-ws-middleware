@@ -162,15 +162,6 @@ const HostMiddleware = (root, options) => {
     let instance;
     let disconnectCallback, connectCallback;
 
-    const _strip = (obj) => {
-        if(!obj) return false;
-        // remove any private fields, anything starting with underscores
-        for (const key in obj) {
-            if(key.startsWith("_")) delete obj[key];
-        }
-        return obj;
-    }
-
     const _handle = async (socket, object) => {
         const name = object.name;
         const args = object.args;
@@ -197,11 +188,7 @@ const HostMiddleware = (root, options) => {
             if(typeof instance[name] !== "function") throw new Error("Root method does not exist!");
 
             console.log("(Server) Calling root method", name, args);
-            const result = this._strip(await instance[name](...args));
-            // strip result of any private data (methods/variables starting with _)
-
-            
-
+            const result = await instance[name](...args);
 
             socket.send(JSON.stringify({
                 _id,
