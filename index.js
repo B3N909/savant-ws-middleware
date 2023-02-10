@@ -195,7 +195,7 @@ const HostMiddleware = (root, options) => {
             //     if(key.startsWith("_")) delete result[key];
             // }
 
-            socket.send(JSON.stringify({
+            const str = JSON.stringify({
                 _id,
                 result
             }, (key, value) => {
@@ -203,7 +203,11 @@ const HostMiddleware = (root, options) => {
                   return undefined;
                 }
                 return value;
-              }));
+            });
+
+            console.log("(Server) Sending result", str, "to client with id ", _id);
+
+            socket.send(str);
         }
     }
 
