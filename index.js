@@ -188,7 +188,12 @@ const HostMiddleware = (root, options) => {
             if(typeof instance[name] !== "function") throw new Error("Root method does not exist!");
 
             console.log("(Server) Calling root method", name, args);
-            const result = await instance[name](...args);
+            let result = await instance[name](...args);
+
+            // remove any private fields
+            for (const key in result) {
+                if(key.startsWith("_")) delete result[key];
+            }
 
             socket.send(JSON.stringify({
                 _id,
