@@ -172,7 +172,7 @@ const HostMiddleware = (root, options) => {
 
             if(!root[name]) throw new Error("Root method does not exist!");
 
-            console.log("(Server) Calling root method", name, args);
+            console.log("(Server) Calling root object method", name, args);
             let result = await root[name](...args);
 
             // remove any private fields
