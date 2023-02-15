@@ -167,28 +167,13 @@ const HostMiddleware = (root, options) => {
         const args = object.args;
         const _id = object._id;
 
-        if(name === "constructor") {
-            instance = new root(...args);
-            console.log("(Server) Created new root instance");
+        // if root is an object
+        if(typeof root === "object") {
 
-            socket.send(JSON.stringify({
-                _id,
-                result: true
-            }));
-        } else if(name === "close") {
-            delete instance;
-            console.log("(Server) Destroyed root instance");
-
-            socket.send(JSON.stringify({
-                _id,
-                result: true
-            }));
-        } else {
-            if(!instance) throw new Error("No root instance exists!");
-            if(typeof instance[name] !== "function") throw new Error("Root method does not exist!");
+            if(!root[name]) throw new Error("Root method does not exist!");
 
             console.log("(Server) Calling root method", name, args);
-            let result = await instance[name](...args);
+            let result = await root[name](...args);
 
             // remove any private fields
             // for (const key in result) {
@@ -198,16 +183,53 @@ const HostMiddleware = (root, options) => {
             const str = JSON.stringify({
                 _id,
                 result
-            }, (key, value) => {
-                if (key.startsWith("_") && key !== "_id") {
-                  return undefined;
-                }
-                return value;
             });
 
-            console.log("(Server) Sending result", str, "to client with id ", _id);
-
             socket.send(str);
+
+        } else {
+            if(name === "constructor") {
+                instance = new root(...args);
+                console.log("(Server) Created new root instance");
+    
+                socket.send(JSON.stringify({
+                    _id,
+                    result: true
+                }));
+            } else if(name === "close") {
+                delete instance;
+                console.log("(Server) Destroyed root instance");
+    
+                socket.send(JSON.stringify({
+                    _id,
+                    result: true
+                }));
+            } else {
+                if(!instance) throw new Error("No root instance exists!");
+                if(typeof instance[name] !== "function") throw new Error("Root method does not exist!");
+    
+                console.log("(Server) Calling root method", name, args);
+                let result = await instance[name](...args);
+    
+                // remove any private fields
+                // for (const key in result) {
+                //     if(key.startsWith("_")) delete result[key];
+                // }
+                
+                const str = JSON.stringify({
+                    _id,
+                    result
+                }, (key, value) => {
+                    if (key.startsWith("_") && key !== "_id") {
+                      return undefined;
+                    }
+                    return value;
+                });
+    
+                console.log("(Server) Sending result", str, "to client with id ", _id);
+    
+                socket.send(str);
+            }
         }
     }
 
