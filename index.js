@@ -26,7 +26,7 @@ class WebSocketClient {
                     let externalIP = body.externalIP;
                     if(!externalIP.includes(":")) externalIP += ":3000";
 
-                    console.log("Redirecting to", externalIP)
+                    if(doLog) console.log("Redirecting to", externalIP)
                     return r(externalIP);
                 });
             } catch (err) { r(false); }
@@ -47,7 +47,7 @@ class WebSocketClient {
             this.ws = new WebSocket(wsUrl);
 
             this.ws.on("open", () => {
-                console.log("(Client) Connected to WebSocket");
+                if(doLog) console.log("(Client) Connected to WebSocket");
                 this.isOpen = true;
 
                 this.handle({
@@ -56,7 +56,7 @@ class WebSocketClient {
                 });
             });
             this.ws.on("close", () => {
-                console.log("(Client) Disconnected from WebSocket");
+                if(doLog) console.log("(Client) Disconnected from WebSocket");
                 this.isOpen = false;
 
                 this.handle({
@@ -67,7 +67,7 @@ class WebSocketClient {
             this.ws.on("message", (message) => {
                 try {
                     const object = JSON.parse(message);
-                    console.log("(Client) Received message", object);
+                    if(doLog) console.log("(Client) Received message", object);
 
                     if(object._id) {
                         this.events.emit(object._id, object);
@@ -98,7 +98,7 @@ class WebSocketClient {
         object._id = id;
 
         
-        console.log(`(Client) Sending message`, object, `to`, `${this.wsUrl}`)
+        if(doLog) console.log(`(Client) Sending message`, object, `to`, `${this.wsUrl}`)
         this.ws.send(JSON.stringify(object));
         
         return await new Promise(r => this.events.once(id, r))
@@ -131,7 +131,7 @@ const GetClassMethods = (root) => {
         for (const key of keys) {
             if(["caller", "calle", "arguments"].includes(key)) continue;
             if(typeof current[key] === "function") {
-                console.log(" + " + key);
+                if(doLog) console.log(" + " + key);
                 if(!staticMethods.includes(key)) staticMethods.push(key);
             }
         }
@@ -155,6 +155,9 @@ const HostMiddleware = (root, options) => {
         }
     }
 
+    let doLog = false;
+    if(options.doLog) doLog = true;
+
     if(!options) options = {};
     if(!options.port) options.port = process.env.PORT || 3000;
     if(!options.maxConnections) options.maxConnections = 1;
@@ -172,7 +175,7 @@ const HostMiddleware = (root, options) => {
 
             if(!root[name]) throw new Error("Root method does not exist!");
 
-            console.log("(Server) Calling root object method", name, args);
+            if(doLog) console.log("(Server) Calling root object method", name, args);
             let result = await root[name](...args);
 
             // remove any private fields
@@ -190,7 +193,7 @@ const HostMiddleware = (root, options) => {
         } else {
             if(name === "constructor") {
                 instance = new root(...args);
-                console.log("(Server) Created new root instance");
+                if(doLog) console.log("(Server) Created new root instance");
     
                 socket.send(JSON.stringify({
                     _id,
@@ -198,7 +201,7 @@ const HostMiddleware = (root, options) => {
                 }));
             } else if(name === "close") {
                 delete instance;
-                console.log("(Server) Destroyed root instance");
+                if(doLog) console.log("(Server) Destroyed root instance");
     
                 socket.send(JSON.stringify({
                     _id,
@@ -208,7 +211,7 @@ const HostMiddleware = (root, options) => {
                 if(!instance) throw new Error("No root instance exists!");
                 if(typeof instance[name] !== "function") throw new Error("Root method does not exist!");
     
-                console.log("(Server) Calling root method", name, args);
+                if(doLog) console.log("(Server) Calling root method", name, args);
                 let result = await instance[name](...args);
     
                 // remove any private fields
@@ -226,7 +229,7 @@ const HostMiddleware = (root, options) => {
                     return value;
                 });
     
-                console.log("(Server) Sending result", str, "to client with id ", _id);
+                if(doLog) console.log("(Server) Sending result", str, "to client with id ", _id);
     
                 socket.send(str);
             }
@@ -237,17 +240,17 @@ const HostMiddleware = (root, options) => {
     let connections = 0;
 
     const ws = new WebSocket.Server({ port: options.port });
-    console.log(`(Server) Listening on port ${options.port}`);
+    if(doLog) console.log(`(Server) Listening on port ${options.port}`);
     ws.on("connection", (socket) => {
         if(connections > options.maxConnections) {
-            console.log(`(Server) Max connections reached, closing connection from ${socket._socket.remoteAddress}`);
+            if(doLog) console.log(`(Server) Max connections reached, closing connection from ${socket._socket.remoteAddress}`);
             socket.close();
             return;
         }
 
         // Handle New Connection
         connections++;
-        console.log(`(Server) New connection from ${socket._socket.remoteAddress}`);
+        if(doLog) console.log(`(Server) New connection from ${socket._socket.remoteAddress}`);
 
         if(connectCallback) connectCallback({
             connections: connections,
@@ -257,7 +260,7 @@ const HostMiddleware = (root, options) => {
         // Handle Messages
         socket.on("message", async (message) => {
             message = message.toString();
-            console.log("(Server) Received", message);
+            if(doLog) console.log("(Server) Received", message);
 
             try {
                 const object = JSON.parse(message);
@@ -273,14 +276,14 @@ const HostMiddleware = (root, options) => {
                 connections: connections,
                 maxConnections: options.maxConnections,
             });
-            console.log(`(Server) Connection from ${socket._socket.remoteAddress} closed`);
+            if(doLog) console.log(`(Server) Connection from ${socket._socket.remoteAddress} closed`);
         });
     });
 
     return {
         close: async () => {
             await new Promise(r => ws.close(r));
-            console.log("(Server) Closed");
+            if(doLog) console.log("(Server) Closed");
         },
         connections: () => connections,
         port: () => options.port,
@@ -295,9 +298,8 @@ const HostMiddleware = (root, options) => {
     }
 }
 
-const ClientMiddleware = (root, wsUrl) => {
+const ClientMiddleware = (root, wsUrl, doLog) => {
     // if root is of type object
-    
     let methods = [];
     if(typeof root === "object") {
         const keys = Object.keys(root);
