@@ -1,5 +1,6 @@
 const WebSocket = require("ws");
 const request = require("request");
+const doLog = process.env.doLog || false;
 
 class WebSocketClient {
 
