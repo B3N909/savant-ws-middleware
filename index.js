@@ -157,11 +157,11 @@ const HostMiddleware = (root, options) => {
     }
 
     let doLog = false;
-    if(options.doLog) doLog = true;
-
+    
     if(!options) options = {};
     if(!options.port) options.port = process.env.PORT || 3000;
     if(!options.maxConnections) options.maxConnections = 1;
+    if(options.doLog) doLog = true;
     
     let instance;
     let disconnectCallback, connectCallback;
