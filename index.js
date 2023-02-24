@@ -1,6 +1,7 @@
 const WebSocket = require("ws");
 const request = require("request");
-const doLog = process.env.doLog || false;
+let doLog = false;
+let ip = false;
 
 class WebSocketClient {
 
@@ -8,29 +9,30 @@ class WebSocketClient {
         if(url.startsWith("ws://") || url.startsWith("wss://")) return url;
 
         let v = await new Promise(r => {
-            try {
-                request({
-                    url,
-                    method: "GET",
-                    json: true
-                }, (err, resp, body) => {
-                    if(err || !resp || !resp.statusCode || resp.statusCode !== 200) {
-                        if(body && body.includes("Max instances reached")) throw new Error("Max cloud instances reached, cannot connect to redirect URL")
+            request({
+                url,
+                method: "GET",
+                json: true
+            }, (err, resp, body) => {
+                if(err || !resp || !resp.statusCode || resp.statusCode !== 200) {
+                    if(err) r(false);
+                    if(body && body.includes("Max instances reached")) throw new Error("Max cloud instances reached, cannot connect to redirect URL")
+                    else throw new Error("Invalid response from server, cannot connect to redirect URL");
+                }
 
-                        if(err) throw err;
-                        else throw new Error("Invalid response from server, cannot connect to redirect URL");
-                    }
-                    // if there is no body.externalIP
+                if(body) {
                     if(typeof body.externalIP === "undefined") throw new Error("Invalid response from server, cannot connect to redirect URL, no redirect IP");
                     if(!body.externalIP) r(false);
-                    
+    
                     let externalIP = body.externalIP;
                     if(!externalIP.includes(":")) externalIP += ":3000";
-
-                    if(doLog) console.log("Redirecting to", externalIP)
-                    return r(externalIP);
-                });
-            } catch (err) { r(false); }
+                    ip = externalIP;
+                    if(doLog) console.log("Redirecting to", ip);
+                    return r(ip);
+                } else {
+                    r(false);
+                }
+            });
         });
         if(!v) return await this._getWsUrl(url);
         return `ws://${v}`;
@@ -299,7 +301,7 @@ const HostMiddleware = (root, options) => {
     }
 }
 
-const ClientMiddleware = (root, wsUrl, doLog) => {
+const ClientMiddleware = (root, wsUrl, apiKey) => {
     // if root is of type object
     let methods = [];
     if(typeof root === "object") {
@@ -311,7 +313,9 @@ const ClientMiddleware = (root, wsUrl, doLog) => {
     
     class MiddlewareClass extends WebSocketClient {
         constructor(...args) {
-            super(wsUrl, args)
+            let fullWsUrl = wsUrl;
+            if(apiKey) fullWsUrl += "?apiKey=" + apiKey;
+            super(fullWsUrl, args)
             // wrap all of root's methods
             
             for (const key of methods) {
@@ -327,7 +331,15 @@ const ClientMiddleware = (root, wsUrl, doLog) => {
     return MiddlewareClass;
 }
 
-module.exports = {
-    Host: HostMiddleware,
-    Client: ClientMiddleware
+module.exports = (_doLog) => {
+    if(_doLog) doLog = _doLog;
+
+
+    return {
+        Host: HostMiddleware,
+        Client: ClientMiddleware,
+        getIP: () => {
+            return ip;
+        }
+    }
 }
