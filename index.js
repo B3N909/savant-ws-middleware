@@ -108,7 +108,7 @@ class WebSocketClient {
         this.ws.send(JSON.stringify(object));
         
         return await new Promise(r => this.events.once(id, (object) => {
-            const { error, result } = object;
+            let { error, result } = object;
             if(error) console.log("Encountered an error whilst handling response:", error);
             if(!result) result = false;
             r(result);
