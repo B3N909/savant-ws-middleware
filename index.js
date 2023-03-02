@@ -111,6 +111,10 @@ class WebSocketClient {
             let { error, result } = object;
             if(error) console.log("Encountered an error whilst handling response:", error);
             if(!result) result = false;
+            if(result === "no-response") {
+                if(doLog) console.log(`(Client) Server responded with no-response`);   
+                result = false;
+            }
             r(result);
         }));
     }
