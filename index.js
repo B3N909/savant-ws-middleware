@@ -21,21 +21,23 @@ class WebSocketClient {
                 }
 
                 if(body) {
-                    if(typeof body.externalIP === "undefined") throw new Error("Invalid response from server, cannot connect to redirect URL, no redirect IP");
-                    if(!body.externalIP) r(false);
-                    if(typeof body.externalIP !== "string") r(false);
-
-                    let externalIP = body.externalIP;
-                    if(!externalIP.includes(":")) externalIP += ":3000";
-                    ip = externalIP;
-                    if(doLog) console.log("Redirecting to", ip);
-                    return r(ip);
-                } else {
-                    r(false);
+                    if(body.externalIP && typeof body.externalIP === "string") {
+                        let externalIP = body.externalIP;
+                        if(!externalIP.includes(":")) externalIP += ":3000";
+                        ip = externalIP;
+                        if(doLog) console.log("Redirecting to", ip);
+                        return r(ip);
+                    }
                 }
+                r(false);
             });
         });
-        if(!v) return await this._getWsUrl(url);
+        if(!v) {
+            // wait 1500ms
+            await new Promise(r => setTimeout(r, 1500));
+            console.log("No servers available, retrying...");
+            return await this._getWsUrl(url);
+        }
         return `ws://${v}`;
     }
 
