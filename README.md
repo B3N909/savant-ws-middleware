@@ -57,8 +57,17 @@ class Animal {
     const result = await remoteAnimal.wait10Seconds(10);
     console.log("Result:", result); // prints "Result: waited 10 seconds!"
 })();
-
 ```
+
+
+### Routing via Redirect
+If you supply a HTTP/HTTPS to the client- it will attempt to GET pull a IP/PORT value set as `"externalIP"` within a JSON body response.
+
+Example:
+```json
+{ "externalIP": "127.0.0.1:3000" }
+```
+
 On the "host" or "server" side, we use the `Host` function provided by `@savant/ws-middleware` to wrap the `Animal` class with a WebSocket server. On the "client" side, we use the `Client` function to create a proxy to the remote `Animal` class. We can then use this proxy as if it were a local instance of the `Animal` class, while the underlying communication is handled transparently by `@savant/ws-middleware`.
 <br><br><br>
 Here's an example of how to use `@savant/ws-middleware` with a function:
